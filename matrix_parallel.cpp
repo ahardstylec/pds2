@@ -29,9 +29,13 @@ int main(int argc, char **argv) {
   }
 
   int myid, numprocs;
-  MPI::Init();
+  MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
   MPI_Comm_rank(MPI_COMM_WORLD, &numprocs);
+  if(numprocs < 2){
+	  cout << "Need more than 1 Procs" << endl << flush;
+	  return 0;
+  }
   CMatrix m1(argv[1]);                 // read 1st matrix
   CMatrix m2(argv[2]);                 // read 2nd matrix
   CMatrix result(m1.height, m2.width); // allocate memory
@@ -40,6 +44,7 @@ int main(int argc, char **argv) {
   assert(m2.width == m1.height); // check compatibility
 
   int ergSize = m1.height * m2.width;
+  cout << "DEBUG:"<< numprocs << "===" << ergSize << flush;
   int div_erg = ergSize / numprocs;
   int startpos, endpos;
   if (myid != 0) {
@@ -55,6 +60,7 @@ int main(int argc, char **argv) {
 	int row;
 	vector<double> tmp_res;
 	double tmp_erg = 0.0;
+	cout << "Befor for" << endl << flush;
 	for (int pos = startpos; pos < endpos; pos++) {
 	  row = pos / result.width;
 	  col = pos / result.height;
@@ -66,16 +72,17 @@ int main(int argc, char **argv) {
 	  tmp_res.push_back(tmp_erg);
 	  tmp_erg = 0.0;
 	}
+	cout << "After for" << endl << flush;
 	// Datentypen zum senden vorbereiten
-	int arr_size = 2 + (endpos - startpos);
+	int arr_size = (endpos - startpos);
 	double send_arr[arr_size];
-	send_arr[0] = (double)startpos;
-	send_arr[1] = (double)endpos;
+	//	send_arr[0] = (double)startpos;
+	//	send_arr[1] = (double)endpos;
 	for (int i = 0; i < tmp_res.size() - 1; i++) {
-	  send_arr[i + 2] = tmp_res[i];
+	  send_arr[i] = tmp_res[i];
 	}
 	// senden
-	MPI_Send(tmp_res.data(), tmp_res.size(), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+	MPI_Send(send_arr, tmp_res.size(), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
   } else {
 	// berechnen den ersten abschnitt
 	int startpos = 0;
@@ -100,12 +107,15 @@ int main(int argc, char **argv) {
 	}
 
 	// TODO korrigieren zu dynamischen array
-	double recv_arr[1000];
+	double recv_arr[ergSize];
 
 	// empfange ergebnis und füge in matrix ein
 	for (int i = 1; i < numprocs - 1; i++) {
 	  if (i == numprocs - 1) {
-		  //????
+		startpos = div_erg * numprocs - 1;
+		endpos = ergSize;
+		MPI_Recv(recv_arr, (endpos - startpos), MPI_DOUBLE, i, 0,
+				 MPI_COMM_WORLD, NULL);
 	  } else {
 		MPI_Recv(recv_arr, div_erg, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, NULL);
 		for (int j = 0; j < div_erg; j++) {
@@ -115,27 +125,6 @@ int main(int argc, char **argv) {
 	}
   }
 
-  // TODO multiply matrices
-  MPI_Bcast(result.container, result.size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  // --- multiply matrices ---
-  for (unsigned int col = 0; col < m2.width; col++) {
-	for (unsigned int row = 0; row < m1.height; row++) {
-	  double sum = 0.0;
-	  for (unsigned int dot = 0; dot < m2.height; dot++) {
-		// cout <<  "m1[" << row << "][" << dot << "] = " << m1[row][dot]
-		//  << ", m2[" << dot << "][" << col << "] = " << m2[dot][col] << endl;
-		sum += m1[row][dot] * m2[dot][col];
-	  }
-	  // cout << "result[" << row <<" ][" << col << "] = " << sum;
-	  result[row][col] = sum;
-	}
-  }
-
-  MPI_Reduce(result.container, NULL, 0, NULL, MPI_SUM, 0, MPI_COMM_WORLD);
-
-  cout << "someday i will multiply here; i'm rank "
-	   << MPI::COMM_WORLD.Get_rank() << " of " << MPI::COMM_WORLD.Get_size()
-	   << endl;
 
   MPI::Finalize();
 
