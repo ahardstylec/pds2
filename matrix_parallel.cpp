@@ -97,6 +97,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	// empfange ergebnis und füge in matrix ein
+	MPI_Status status;
 	for (int i = 1; i < numprocs; i++) {
 	  if (i == numprocs - 1) {
 		startpos = div_erg *( numprocs - 1);
@@ -104,14 +105,14 @@ int main(int argc, char *argv[]) {
 		double recv_arr[endpos - startpos];
 		//cout << "ergsize: "<< ergSize << "\t diverg: "<< div_erg << "\tstartpos:" << startpos <<endpos-startpos << endl << flush;
 		MPI_Recv(recv_arr, (endpos - startpos), MPI_DOUBLE, i, 0,
-				 MPI_COMM_WORLD, NULL);
+				 MPI_COMM_WORLD, &status);
 		for (int j = 0; j < (endpos - startpos); j++) {
 		  //cout << "place result cell: " << j + div_erg * i<<endl << flush;
 		  result.container[j + div_erg * i] = recv_arr[j];
 		}
 	  } else {
 		double recv_arr[div_erg];
-		MPI_Recv(recv_arr, div_erg, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, NULL);
+		MPI_Recv(recv_arr, div_erg, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
 		for (int j = 0; j < div_erg; j++) {
 			//cout << "place result cell: " << j + div_erg * i <<endl << flush;
 		  result.container[j + div_erg * i] = recv_arr[j];
