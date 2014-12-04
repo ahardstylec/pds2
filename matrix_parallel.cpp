@@ -20,7 +20,7 @@ void printError(const char *progname, const char *error) {
 }
 
 // +++ main starts here +++
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
 
   // process arguments
   if (argc != 3) {
@@ -44,15 +44,16 @@ int main(int argc, char **argv) {
   assert(m2.width == m1.height); // check compatibility
 
   int ergSize = m1.height * m2.width;
-  cout << "DEBUG:"<< numprocs << "===" << ergSize << flush;
+  //cout << "DEBUG:"<< numprocs << "===" << ergSize << flush;
   int div_erg = ergSize / numprocs;
   int startpos, endpos;
   if (myid != 0) {
 	startpos = div_erg * myid;
-	endpos = div_erg * myid + 1;
-	if ((div_erg * myid + 2) > ergSize) {
+	endpos = div_erg * myid+ div_erg;
+	if (myid == numprocs -1) {
 	  endpos = ergSize;
 	}
+	//cout << "STARTPOS (" << myid << "): " << startpos << "\tENDPOS: " << endpos << "\tSIZE: " << endpos-startpos << endl<<flush;
 	// Berechne zwischen startpos und endpos
 	// int startpos = 0;//chnage later
 	// int endpos = div_erg;
@@ -60,19 +61,18 @@ int main(int argc, char **argv) {
 	int row;
 	vector<double> tmp_res;
 	double tmp_erg = 0.0;
-	cout << "Befor for" << endl << flush;
+	//cout << "Befor for" << endl << flush;
 	for (int pos = startpos; pos < endpos; pos++) {
 	  row = pos / result.width;
-	  col = pos / result.height;
+	  col = pos % result.width;
+	  //cout << myid << " ROW:" << row << "\tCOL:" << col << "\tPOS:" << pos << endl << flush;
 	  for (int i = 0; i < m1.width; i++) {
-		for (int k = 0; k < m2.height; k++) {
-		  tmp_erg += m1[i + row][k + col] * m2[k + col][i + row];
-		}
+		  tmp_erg += m1[ row][i] * m2[i][col];
 	  }
 	  tmp_res.push_back(tmp_erg);
 	  tmp_erg = 0.0;
 	}
-	cout << "After for" << endl << flush;
+	//cout << "After for" << endl << flush;
 	// Datentypen zum senden vorbereiten
 	int arr_size = (endpos - startpos);
 	double send_arr[arr_size];
@@ -87,17 +87,17 @@ int main(int argc, char **argv) {
 	// berechnen den ersten abschnitt
 	int startpos = 0;
 	int endpos = div_erg;
+	//cout << "STARTPOS (" << myid << "): " << startpos << "\tENDPOS: " << endpos << "\tSIZE: " << endpos-startpos << endl<<flush;
 	int col;
 	int row;
 	vector<double> tmp_res;
 	double tmp_erg = 0.0;
 	for (int pos = startpos; pos < endpos; pos++) {
 	  row = pos / result.width;
-	  col = pos / result.height;
+	  col = pos % result.width;
+	  //cout << myid << " ROW:" << row << "\tCOL:" << col << "\tPOS:" << pos << endl << flush;
 	  for (int i = 0; i < m1.width; i++) {
-		for (int k = 0; k < m2.height; k++) {
-		  tmp_erg += m1[i + row][k + col] * m2[k + col][i + row];
-		}
+		  tmp_erg += m1[ row][i] * m2[i][col];
 	  }
 	  tmp_res.push_back(tmp_erg);
 	  tmp_erg = 0.0;
@@ -110,26 +110,33 @@ int main(int argc, char **argv) {
 	double recv_arr[ergSize];
 
 	// empfange ergebnis und füge in matrix ein
-	for (int i = 1; i < numprocs - 1; i++) {
+	for (int i = 1; i < numprocs; i++) {
 	  if (i == numprocs - 1) {
-		startpos = div_erg * numprocs - 1;
+		startpos = div_erg *( numprocs - 1);
 		endpos = ergSize;
+		//cout << "ergsize: "<< ergSize << "\t diverg: "<< div_erg << "\tstartpos:" << startpos <<endpos-startpos << endl << flush;
 		MPI_Recv(recv_arr, (endpos - startpos), MPI_DOUBLE, i, 0,
 				 MPI_COMM_WORLD, NULL);
+		for (int j = 0; j < (endpos - startpos); j++) {
+		  //cout << "place result cell: " << j + div_erg * i<<endl << flush;
+		  result.container[j + div_erg * i] = recv_arr[j];
+		}
 	  } else {
 		MPI_Recv(recv_arr, div_erg, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, NULL);
 		for (int j = 0; j < div_erg; j++) {
+			//cout << "place result cell: " << j + div_erg * i <<endl << flush;
 		  result.container[j + div_erg * i] = recv_arr[j];
 		}
 	  }
 	}
+
+	result.print();
   }
 
 
   MPI::Finalize();
 
   // print matrix
-  result.print();
 
   return 0;
 }
