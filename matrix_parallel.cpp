@@ -73,16 +73,9 @@ int main(int argc, char *argv[]) {
 	  tmp_erg = 0.0;
 	}
 	//cout << "After for" << endl << flush;
-	// Datentypen zum senden vorbereiten
-	int arr_size = (endpos - startpos);
-	double send_arr[arr_size];
-	//	send_arr[0] = (double)startpos;
-	//	send_arr[1] = (double)endpos;
-	for (int i = 0; i < tmp_res.size() - 1; i++) {
-	  send_arr[i] = tmp_res[i];
-	}
+
 	// senden
-	MPI_Send(send_arr, tmp_res.size(), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+	MPI_Send(tmp_res.data(), tmp_res.size(), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
   } else {
 	// berechnen den ersten abschnitt
 	int startpos = 0;
@@ -99,21 +92,16 @@ int main(int argc, char *argv[]) {
 	  for (int i = 0; i < m1.width; i++) {
 		  tmp_erg += m1[ row][i] * m2[i][col];
 	  }
-	  tmp_res.push_back(tmp_erg);
+	  result.container[pos]=tmp_erg;
 	  tmp_erg = 0.0;
 	}
-	for (int i = 0; i < div_erg; i++) {
-	  result.container[i] = tmp_res.at(i);
-	}
-
-	// TODO korrigieren zu dynamischen array
-	double recv_arr[ergSize];
 
 	// empfange ergebnis und füge in matrix ein
 	for (int i = 1; i < numprocs; i++) {
 	  if (i == numprocs - 1) {
 		startpos = div_erg *( numprocs - 1);
 		endpos = ergSize;
+		double recv_arr[endpos - startpos];
 		//cout << "ergsize: "<< ergSize << "\t diverg: "<< div_erg << "\tstartpos:" << startpos <<endpos-startpos << endl << flush;
 		MPI_Recv(recv_arr, (endpos - startpos), MPI_DOUBLE, i, 0,
 				 MPI_COMM_WORLD, NULL);
@@ -122,6 +110,7 @@ int main(int argc, char *argv[]) {
 		  result.container[j + div_erg * i] = recv_arr[j];
 		}
 	  } else {
+		double recv_arr[div_erg];
 		MPI_Recv(recv_arr, div_erg, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, NULL);
 		for (int j = 0; j < div_erg; j++) {
 			//cout << "place result cell: " << j + div_erg * i <<endl << flush;
