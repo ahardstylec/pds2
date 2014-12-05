@@ -8,7 +8,11 @@ counter = 10
 	puts "Benchmark for #{counter}"
 	100.times do |k|
 		start = Time.now
-		system("mpiexec  -n #{k} ./matrix_parallel matrix#{counter}.txt matrix#{counter}.txt > /dev/null")
+		success = system("mpiexec  -n #{k} ./matrix_parallel matrix#{counter}.txt matrix#{counter}.txt > /dev/null")
+		if success == false || success.nil?
+			puts "Some Error occurd during mpiexec with #{k} processes on matrix: matrix#{counter}.txt"
+			return 1
+		end
 		ende = (Time.now - start)
 		puts "#{k}\t #{ende}"
 	end
