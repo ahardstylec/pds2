@@ -16,7 +16,7 @@ counter = 10
 		success = system("mpiexec  -n #{k} ./matrix_parallel matrix#{counter}.txt matrix#{counter}.txt > /dev/null")
 		unless success
 			puts "Some Error occurd during mpiexec with #{k} processes on matrix: matrix#{counter}.txt"
-			return 1
+			exit 1
 		end
 		ende = (Time.now - start)
 		puts "#{k}\t #{ende}"
