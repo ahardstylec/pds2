@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
             }
         }
         // print matrix
-        result.print();
+//        result.print();
     }
     MPI::Finalize();
 
