@@ -6,9 +6,19 @@
 #include <assert.h>
 #include <vector>
 #include <mpi.h>
+#include <stdlib.h>
 #include "CMatrix.h"
+#include <unistd.h>
 
 using namespace std;
+
+struct MatrixRange {
+    int start;
+    int end;
+    int size;
+    int matrixsize;
+    int proc_id;
+};
 
 void printError(const char *progname, const char *error) {
   if (error != NULL) {
@@ -19,116 +29,77 @@ void printError(const char *progname, const char *error) {
 	   << endl;
 }
 
+void createMatrixRange(struct MatrixRange * range, CMatrix *a, CMatrix *b, int proc_id,int numprocs){
+    range->matrixsize = a->width*b->height;
+    int div_erg = range->matrixsize / numprocs;
+    range->start = div_erg * proc_id;
+    if (proc_id !=  numprocs -1){
+        range->size = div_erg;
+        range->end = range->size * proc_id + range->size;
+    }else{
+        range->size = range->matrixsize - range->start;
+        range->end=range->matrixsize;
+    }
+    range->proc_id=proc_id;
+}
+
 // +++ main starts here +++
 int main(int argc, char *argv[]) {
 
-  // process arguments
-  if (argc != 3) {
-	printError(argv[0], "wrong number of arguments.");
-	return -1;
-  }
+    // process arguments
+    if (argc != 3) {
+        printError(argv[0], "wrong number of arguments.");
+        return -1;
+    }
 
-  int myid, numprocs;
-  MPI_Init(&argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-  MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-  if(numprocs < 2){
-	  cout << "Need more than 1 Procs" << endl << flush;
-	  return 0;
-  }
-  CMatrix m1(argv[1]);                 // read 1st matrix
-  CMatrix m2(argv[2]);                 // read 2nd matrix
-  CMatrix result(m1.height, m2.width); // allocate memory
+    int myid, numprocs;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 
-  assert(m1.width == m2.height); // check compatibility
-  assert(m2.width == m1.height); // check compatibility
+    CMatrix m1(argv[1]);                 // read 1st matrix
+    CMatrix m2(argv[2]);                 // read 2nd matrix
+    CMatrix result(m1.height, m2.width); // allocate memory
 
-  int ergSize = m1.height * m2.width;
-  //cout << "DEBUG:"<< numprocs << "===" << ergSize << flush;
-  int div_erg = ergSize / numprocs;
-  int startpos, endpos;
-  if (myid != 0) {
-	startpos = div_erg * myid;
-	endpos = div_erg * myid+ div_erg;
-	if (myid == numprocs -1) {
-	  endpos = ergSize;
-	}
-	//cout << "STARTPOS (" << myid << "): " << startpos << "\tENDPOS: " << endpos << "\tSIZE: " << endpos-startpos << endl<<flush;
-	// Berechne zwischen startpos und endpos
-	// int startpos = 0;//chnage later
-	// int endpos = div_erg;
-	int col;
-	int row;
-	vector<double> tmp_res;
-	double tmp_erg = 0.0;
-	//cout << "Befor for" << endl << flush;
-	for (int pos = startpos; pos < endpos; pos++) {
-	  row = pos / result.width;
-	  col = pos % result.width;
-	  //cout << myid << " ROW:" << row << "\tCOL:" << col << "\tPOS:" << pos << endl << flush;
-	  for (int i = 0; i < m1.width; i++) {
-		  tmp_erg += m1[ row][i] * m2[i][col];
-	  }
-	  tmp_res.push_back(tmp_erg);
-	  tmp_erg = 0.0;
-	}
-	//cout << "After for" << endl << flush;
+    assert(m1.width == m2.height); // check compatibility
+    assert(m2.width == m1.height); // check compatibility
 
-	// senden
-	MPI_Send(tmp_res.data(), tmp_res.size(), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-  } else {
-	// berechnen den ersten abschnitt
-	int startpos = 0;
-	int endpos = div_erg;
-	//cout << "STARTPOS (" << myid << "): " << startpos << "\tENDPOS: " << endpos << "\tSIZE: " << endpos-startpos << endl<<flush;
-	int col;
-	int row;
-	vector<double> tmp_res;
-	double tmp_erg = 0.0;
-	for (int pos = startpos; pos < endpos; pos++) {
-	  row = pos / result.width;
-	  col = pos % result.width;
-	  //cout << myid << " ROW:" << row << "\tCOL:" << col << "\tPOS:" << pos << endl << flush;
-	  for (int i = 0; i < m1.width; i++) {
-		  tmp_erg += m1[ row][i] * m2[i][col];
-	  }
-	  result.container[pos]=tmp_erg;
-	  tmp_erg = 0.0;
-	}
+    MatrixRange my_range;
+    createMatrixRange(&my_range, &m1,&m2, myid, numprocs);
 
-	// empfange ergebnis und füge in matrix ein
-	MPI_Status status;
-	for (int i = 1; i < numprocs; i++) {
-	  if (i == numprocs - 1) {
-		startpos = div_erg *( numprocs - 1);
-		endpos = ergSize;
-		double recv_arr[endpos - startpos];
-		//cout << "ergsize: "<< ergSize << "\t diverg: "<< div_erg << "\tstartpos:" << startpos <<endpos-startpos << endl << flush;
-		MPI_Recv(recv_arr, (endpos - startpos), MPI_DOUBLE, i, 0,
-				 MPI_COMM_WORLD, &status);
-		for (int j = 0; j < (endpos - startpos); j++) {
-		  //cout << "place result cell: " << j + div_erg * i<<endl << flush;
-		  result.container[j + div_erg * i] = recv_arr[j];
-		}
-	  } else {
-		double recv_arr[div_erg];
-		MPI_Recv(recv_arr, div_erg, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
-		for (int j = 0; j < div_erg; j++) {
-			//cout << "place result cell: " << j + div_erg * i <<endl << flush;
-		  result.container[j + div_erg * i] = recv_arr[j];
-		}
-	  }
-	}
+    double tmp_erg = 0.0;
+    int row,col;
+    for (int pos = my_range.start; pos < my_range.end; pos++, tmp_erg=0.0) {
+        row = pos / result.width;
+        col = pos % result.height;
+        for (int i = 0; i < m1.width; i++) {
+            tmp_erg += m1[row][i] * m2[i][col];
+        }
+        result.container[pos]=tmp_erg;
+    }
 
-	result.print();
-  }
+//    cout << "After Matrix Calc" << endl << flush;
 
+    if (myid != 0) {
+//        cout << "before send"<<endl<<flush;
+        MPI_Send(&result.container[my_range.start], my_range.size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    } else {
+        // empfange ergebnisse und füge in matrix ein
+        if(numprocs > 1){
+            MPI_Status status;
+            for (int i = 1; i < numprocs; i++) {
+                MatrixRange proc_range;
+                createMatrixRange(&proc_range, &m1, &m2, i, numprocs);
+//                printf("from %d size: %d\t start: %d \n", i, proc_range.size, proc_range.start); fflush(stdout);
+                MPI_Recv(&result.container[proc_range.start], proc_range.size, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+            }
+        }
+        // print matrix
+        result.print();
+    }
+    MPI::Finalize();
 
-  MPI::Finalize();
-
-  // print matrix
-
-  return 0;
+    return 0;
 }
 
 // EOF

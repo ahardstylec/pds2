@@ -1,0 +1,6 @@
+CMatrix.cpp
+CMatrix.h
+Makefile
+matrix_generator.cpp
+matrix_parallel.cpp
+matrix_sequential.cpp
