@@ -10,7 +10,7 @@ FileUtils.mkdir_p("benchmarks")
 puts "calc matrices sequential"
 counter = 10
 File.open("benchmarks/matrices_sequential.txt", 'w') do |f|
-	(1..100).each do |i|
+	(1..10).each do |i|
 		system("./matrix_generator #{counter} #{counter} > matrix#{counter}.txt")
 		start = Time.now
 		system("./matrix_sequential matrix#{counter}.txt matrix#{counter}.txt > /dev/null")
