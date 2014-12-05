@@ -5,6 +5,7 @@
 #include <iostream>
 #include <assert.h>
 #include "CMatrix.h"
+#include <mpi.h>
 
 using namespace std;
 
@@ -25,6 +26,10 @@ int main(int argc, char** argv) {
         printError(argv[0], "wrong number of arguments.");
         return -1;
     }
+    double startwtime = 0.0, endwtime;
+
+    MPI_Init(&argc, &argv);
+    startwtime = MPI_Wtime();
 
     CMatrix m1(argv[1]);                    // read 1st matrix
     CMatrix m2(argv[2]);                    // read 2nd matrix
@@ -47,9 +52,12 @@ int main(int argc, char** argv) {
         }
     }
 
+    endwtime = MPI_Wtime();
+    cout << result.width << " " << result.height << " " << endwtime-startwtime << endl;
 
+    MPI::Finalize();
     // print matrix
-    result.print();
+    //result.print();
 
     return 0;
 }

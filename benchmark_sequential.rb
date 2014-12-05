@@ -12,10 +12,7 @@ counter = 10
 File.open("benchmarks/matrices_sequential.txt", 'w') do |f|
 	(1..10).each do |i|
 		system("./matrix_generator #{counter} #{counter} > matrix#{counter}.txt")
-		start = Time.now
-		system("./matrix_sequential matrix#{counter}.txt matrix#{counter}.txt > /dev/null")
-		ende = (Time.now - start)
-		f.puts "#{i}\t #{ende}"
+		f.puts `mpiexec -n 1 ./matrix_sequential matrix#{counter}.txt matrix#{counter}.txt`
 		counter += 10
 	end
 end

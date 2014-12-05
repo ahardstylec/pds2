@@ -52,10 +52,14 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    double startwtime = 0.0, endwtime;
     int myid, numprocs;
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+
+    if (myid == 0)
+        startwtime = MPI_Wtime();
 
     CMatrix m1(argv[1]);                 // read 1st matrix
     CMatrix m2(argv[2]);                 // read 2nd matrix
@@ -96,7 +100,10 @@ int main(int argc, char *argv[]) {
         }
         // print matrix
 //        result.print();
+        endwtime = MPI_Wtime();
+        cout << result.width << " " << result.height << " " << numprocs << " " << endwtime-startwtime << endl;
     }
+
     MPI::Finalize();
 
     return 0;
