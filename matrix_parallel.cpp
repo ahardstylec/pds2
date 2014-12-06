@@ -73,6 +73,8 @@ int main(int argc, char *argv[]) {
 
     double tmp_erg = 0.0;
     int row,col;
+
+    // calc only sub set range of matzices for each process
     for (int pos = my_range.start; pos < my_range.end; pos++, tmp_erg=0.0) {
         row = pos / result.width;
         col = pos % result.height;
@@ -82,24 +84,14 @@ int main(int argc, char *argv[]) {
         result.container[pos]=tmp_erg;
     }
 
-//    cout << "After Matrix Calc" << endl << flush;
 
-    if (myid != 0) {
-//        cout << "before send"<<endl<<flush;
-        MPI_Send(&result.container[my_range.start], my_range.size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-    } else {
-        // empfange ergebnisse und füge in matrix ein
-        if(numprocs > 1){
-            MPI_Status status;
-            for (int i = 1; i < numprocs; i++) {
-                MatrixRange proc_range;
-                createMatrixRange(&proc_range, &m1, &m2, i, numprocs);
-//                printf("from %d size: %d\t start: %d \n", i, proc_range.size, proc_range.start); fflush(stdout);
-                MPI_Recv(&result.container[proc_range.start], proc_range.size, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
-            }
-        }
-        // print matrix
-//        result.print();
+    if( myid == 0)
+      MPI_Reduce(MPI_IN_PLACE,result.container,my_range.matrixsize,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+    else
+      MPI_Reduce(result.container,result.container,my_range.matrixsize,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+
+    if(myid == 0){
+        result.print();
         endwtime = MPI_Wtime();
         cout << result.width << " " << result.height << " " << numprocs << " " << endwtime-startwtime << endl;
     }
