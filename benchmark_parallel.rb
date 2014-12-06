@@ -24,6 +24,6 @@ File.open("benchmarks/matrices_parallel.txt", 'w') do |f|
 			end
 			f.write out
 		end
-		counter += 10
+		counter += 100
 	end
 end
