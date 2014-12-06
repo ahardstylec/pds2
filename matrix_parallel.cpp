@@ -91,7 +91,6 @@ int main(int argc, char *argv[]) {
       MPI_Reduce(result.container,result.container,my_range.matrixsize,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 
     if(myid == 0){
-        result.print();
         endwtime = MPI_Wtime();
         cout << result.width << " " << result.height << " " << numprocs << " " << endwtime-startwtime << endl;
     }

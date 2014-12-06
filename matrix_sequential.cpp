@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 
     MPI::Finalize();
     // print matrix
-    result.print();
+//    result.print();
 
     return 0;
 }
