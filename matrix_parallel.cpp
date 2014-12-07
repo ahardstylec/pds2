@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
         result.container[pos]=tmp_erg;
     }
 
-
+// easy and possible slower version
     if( myid == 0)
       MPI_Reduce(MPI_IN_PLACE,result.container,my_range.matrixsize,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
     else
@@ -92,6 +92,7 @@ int main(int argc, char *argv[]) {
 
     if(myid == 0){
         endwtime = MPI_Wtime();
+//        recv.print();
         cout << result.width << " " << result.height << " " << numprocs << " " << endwtime-startwtime << endl;
     }
 
