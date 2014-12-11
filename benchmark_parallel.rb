@@ -13,17 +13,17 @@ counter = 10
 
 File.open("benchmarks/matrices_parallel.txt", 'w') do |f|
 	f.sync=true
-	10.times do |i|
+	100.times do |i|
 		system("./matrix_generator #{counter} #{counter} > matrix#{counter}.txt")
 		puts "Benchmark for #{counter}"
 		(1..50).each do |k|
-			out = `mpiexec  -n #{k} ./matrix_parallel matrix#{counter}.txt matrix#{counter}.txt`
+			out = `mpiexec -f hostsFile.txt -n #{k} ./matrix_parallel matrix#{counter}.txt matrix#{counter}.txt`
 			unless $?
 				puts "Some Error occurd during mpiexec with #{k} processes on matrix: matrix#{counter}.txt"
 				exit 1
 			end
 			f.write out
 		end
-		counter += 100
+		counter += 10
 	end
 end
