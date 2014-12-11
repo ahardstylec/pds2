@@ -85,15 +85,31 @@ int main(int argc, char *argv[]) {
     }
 
 // easy and possible slower version
-    if( myid == 0)
-      MPI_Reduce(MPI_IN_PLACE,result.container,my_range.matrixsize,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-    else
-      MPI_Reduce(result.container,result.container,my_range.matrixsize,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+//    if( myid == 0)
+//      MPI_Reduce(MPI_IN_PLACE,result.container,my_range.matrixsize,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+//    else
+//      MPI_Reduce(result.container,result.container,my_range.matrixsize,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+
 
     if(myid == 0){
+        int status;
+        MPI_Request requests[numprocs-1];
+        MPI_Status statuses[numprocs-1];
+        MatrixRange ranges[numprocs];
+        for(int i=0; i<numprocs-1; i++){
+            createMatrixRange(&ranges[i],&m1,&m2, i+1, numprocs);
+            MPI_Irecv(&result.container[ranges[i].start], ranges[i].size, MPI_DOUBLE, i+1, i+1, MPI_COMM_WORLD, &requests[i]);
+        }
+
+        status =MPI_Waitall(numprocs-1, requests, statuses);
+        if(status != MPI_SUCCESS){
+        }
         endwtime = MPI_Wtime();
-//        recv.print();
+
+//        result.print();
         cout << result.width << " " << result.height << " " << numprocs << " " << endwtime-startwtime << endl;
+    }else{
+        MPI_Send(&result.container[my_range.start],my_range.size, MPI_DOUBLE, 0, myid, MPI_COMM_WORLD);
     }
 
     MPI::Finalize();
