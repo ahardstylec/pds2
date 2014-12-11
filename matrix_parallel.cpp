@@ -61,6 +61,11 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 
+    // Print off a hello world message
+    printf("Hello world from processor %s, rank %d"
+           " out of %d processors\n",
+           hostname, myid, numprocs);
+
     MPI_Get_processor_name(hostname, &hostname_len);
 
     if (myid == 0)
