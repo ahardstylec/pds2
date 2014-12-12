@@ -60,13 +60,12 @@ int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-
-    // Print off a hello world message
-    printf("Hello world from processor %s, rank %d"
-           " out of %d processors\n",
-           hostname, myid, numprocs);
-
     MPI_Get_processor_name(hostname, &hostname_len);
+
+    // Print off a hello world message"
+    cout << "Hello world from processor "<< hostname<<", rank " << myid <<
+            "out of "<< numprocs<< " processors\n" << flush;
+    MPI_Barrier(MPI_COMM_WORLD);
 
     if (myid == 0)
         startwtime = MPI_Wtime();
