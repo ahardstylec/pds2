@@ -63,8 +63,8 @@ int main(int argc, char *argv[]) {
     MPI_Get_processor_name(hostname, &hostname_len);
 
     // Print off a hello world message"
-    cout << "Hello world from processor "<< hostname<<", rank " << myid <<
-            "out of "<< numprocs<< " processors\n" << flush;
+    //cout << "Hello world from processor "<< hostname<<", rank " << myid <<
+    //        "out of "<< numprocs<< " processors\n" << flush;
     MPI_Barrier(MPI_COMM_WORLD);
 
     if (myid == 0)
