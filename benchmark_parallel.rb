@@ -17,9 +17,10 @@ File.open("benchmarks/matrices_parallel.txt", 'w') do |f|
 		system("./matrix_generator #{counter} #{counter} > matrix#{counter}.txt")
 		puts "Benchmark for #{counter}"
 		(1..50).each do |k|
+			puts "\r call with #{k} prozesses"
 			out = `mpiexec -f hostFile.txt -n #{k} -wdir ~/pds2/ ./matrix_parallel matrix#{counter}.txt matrix#{counter}.txt`
 			unless $?
-				puts "Some Error occurd during mpiexec with #{k} processes on matrix: matrix#{counter}.txt"
+				puts "\nSome Error occurd during mpiexec with #{k} processes on matrix: matrix#{counter}.txt"
 				exit 1
 			end
 			f.write out
